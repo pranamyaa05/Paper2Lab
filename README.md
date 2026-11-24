@@ -1,2 +1,2 @@
 # Paper2Lab
-Paper2Lap
+Paper2Lab
