@@ -1,0 +1,572 @@
+{
+  "$comment": "Generated from src/labs/templates.ts by `npm run registry`. Do not edit by hand.",
+  "templates": [
+    {
+      "id": "pulley-incline",
+      "subject": "physics",
+      "title": "Pulley on an incline",
+      "concept": "Newton's second law · tension · friction",
+      "summary": "Two blocks joined by a string over a pulley. Change the masses, angle and friction to see who wins.",
+      "parts": [
+        {
+          "id": "incline",
+          "name": "Inclined plane",
+          "short": "A slope at angle θ"
+        },
+        {
+          "id": "blockM",
+          "name": "Block M",
+          "short": "Rests on the slope"
+        },
+        {
+          "id": "rope",
+          "name": "String",
+          "short": "Same tension T everywhere"
+        },
+        {
+          "id": "pulley",
+          "name": "Pulley",
+          "short": "Changes the force's direction"
+        },
+        {
+          "id": "blockm",
+          "name": "Hanging mass m",
+          "short": "Pulled straight down by m g"
+        }
+      ],
+      "params": [
+        {
+          "id": "M",
+          "label": "Block M on slope",
+          "unit": "kg",
+          "min": 0.5,
+          "max": 8,
+          "step": 0.1,
+          "value": 2,
+          "kind": "slider"
+        },
+        {
+          "id": "m",
+          "label": "Hanging mass m",
+          "unit": "kg",
+          "min": 0.5,
+          "max": 8,
+          "step": 0.1,
+          "value": 3,
+          "kind": "slider"
+        },
+        {
+          "id": "theta",
+          "label": "Incline angle θ",
+          "unit": "°",
+          "min": 5,
+          "max": 60,
+          "step": 1,
+          "value": 30,
+          "kind": "slider"
+        },
+        {
+          "id": "mu",
+          "label": "Friction μ",
+          "unit": null,
+          "min": 0,
+          "max": 0.8,
+          "step": 0.01,
+          "value": 0.1,
+          "kind": "slider"
+        }
+      ],
+      "actions": [
+        {
+          "id": "restart",
+          "label": "Restart"
+        }
+      ],
+      "equations": [
+        "a = g(m − M sinθ − μM cosθ) / (M + m)",
+        "T = m(g − a)"
+      ],
+      "keywords": [
+        "pulley",
+        "incline",
+        "inclined",
+        "slope",
+        "block",
+        "tension",
+        "string",
+        "rope",
+        "friction",
+        "newton",
+        "atwood",
+        "mass"
+      ]
+    },
+    {
+      "id": "dc-motor",
+      "subject": "physics",
+      "title": "DC electric motor",
+      "concept": "Force on a current · torque · back-EMF",
+      "summary": "A current-carrying coil spins between two magnets. Watch the current drop as the motor speeds up and its back-EMF fights the battery.",
+      "parts": [
+        {
+          "id": "magnets",
+          "name": "Magnets (N and S)",
+          "short": "Make a steady field B"
+        },
+        {
+          "id": "coil",
+          "name": "Coil (armature)",
+          "short": "Carries the current"
+        },
+        {
+          "id": "forces",
+          "name": "Forces on the coil",
+          "short": "F = B I L on each side"
+        },
+        {
+          "id": "commutator",
+          "name": "Split-ring commutator",
+          "short": "Flips current every half turn"
+        },
+        {
+          "id": "brushes",
+          "name": "Carbon brushes",
+          "short": "Slide on the commutator"
+        },
+        {
+          "id": "battery",
+          "name": "Battery",
+          "short": "Drives the current"
+        }
+      ],
+      "params": [
+        {
+          "id": "voltage",
+          "label": "Battery voltage",
+          "unit": "V",
+          "min": 0,
+          "max": 12,
+          "step": 0.1,
+          "value": 6,
+          "kind": "slider"
+        },
+        {
+          "id": "field",
+          "label": "Magnetic field B",
+          "unit": "T",
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "value": 0.5,
+          "kind": "slider"
+        },
+        {
+          "id": "turns",
+          "label": "Turns in coil N",
+          "unit": null,
+          "min": 1,
+          "max": 50,
+          "step": 1,
+          "value": 20,
+          "kind": "slider"
+        }
+      ],
+      "actions": [
+        {
+          "id": "reverse",
+          "label": "Reverse the battery"
+        }
+      ],
+      "equations": [
+        "F = N·B·I·L (each side)",
+        "e = k·ω (back-EMF), k = N·B·A",
+        "I = (V − e) / R",
+        "ω_steady = (2/π)·kV/R ÷ (b + k²/2R)"
+      ],
+      "keywords": [
+        "motor",
+        "dc",
+        "coil",
+        "armature",
+        "commutator",
+        "brush",
+        "magnet",
+        "magnetic",
+        "fleming",
+        "torque",
+        "electromagnet",
+        "emf"
+      ]
+    },
+    {
+      "id": "neuron",
+      "subject": "biology",
+      "title": "Neuron & nerve impulse",
+      "concept": "Action potential · myelin · synapse",
+      "summary": "Send a signal down a nerve cell. Toggle myelin to see why insulated axons fire so much faster.",
+      "parts": [
+        {
+          "id": "dendrite",
+          "name": "Dendrites",
+          "short": "Receive incoming signals"
+        },
+        {
+          "id": "soma",
+          "name": "Soma (cell body)",
+          "short": "Holds the nucleus"
+        },
+        {
+          "id": "hillock",
+          "name": "Axon hillock",
+          "short": "The trigger zone"
+        },
+        {
+          "id": "axon",
+          "name": "Axon",
+          "short": "Carries the impulse"
+        },
+        {
+          "id": "myelin",
+          "name": "Myelin sheath",
+          "short": "Insulation for speed"
+        },
+        {
+          "id": "terminal",
+          "name": "Axon terminals",
+          "short": "Release neurotransmitters"
+        },
+        {
+          "id": "synapse",
+          "name": "Synapse",
+          "short": "The gap between cells"
+        }
+      ],
+      "params": [
+        {
+          "id": "stimulus",
+          "label": "Stimulus",
+          "unit": "mV",
+          "min": 0,
+          "max": 30,
+          "step": 1,
+          "value": 20,
+          "kind": "slider"
+        },
+        {
+          "id": "myelin",
+          "label": "Myelin sheath",
+          "unit": null,
+          "min": 0,
+          "max": 1,
+          "step": 1,
+          "value": 1,
+          "kind": "toggle"
+        },
+        {
+          "id": "diameter",
+          "label": "Axon diameter",
+          "unit": "µm",
+          "min": 1,
+          "max": 20,
+          "step": 1,
+          "value": 10,
+          "kind": "slider"
+        }
+      ],
+      "actions": [
+        {
+          "id": "stimulate",
+          "label": "Stimulate"
+        }
+      ],
+      "equations": [
+        "Fires if −70 mV + stimulus ≥ −55 mV",
+        "v ≈ 6 m/s per µm (myelinated)",
+        "v ≈ √d m/s (unmyelinated)"
+      ],
+      "keywords": [
+        "neuron",
+        "nerve",
+        "axon",
+        "dendrite",
+        "synapse",
+        "myelin",
+        "impulse",
+        "soma",
+        "brain",
+        "action potential",
+        "nervous"
+      ]
+    },
+    {
+      "id": "animal-cell",
+      "subject": "biology",
+      "title": "Animal cell",
+      "concept": "Organelles · osmosis · respiration",
+      "summary": "Slice open an animal cell and explore its organelles. Put it in salty or pure water to see osmosis, and raise the energy demand to make the mitochondria work.",
+      "parts": [
+        {
+          "id": "membrane",
+          "name": "Cell membrane",
+          "short": "Controls what enters and leaves"
+        },
+        {
+          "id": "cytoplasm",
+          "name": "Cytoplasm",
+          "short": "Jelly where reactions happen"
+        },
+        {
+          "id": "nucleus",
+          "name": "Nucleus",
+          "short": "Holds the DNA"
+        },
+        {
+          "id": "nucleolus",
+          "name": "Nucleolus",
+          "short": "Builds ribosomes"
+        },
+        {
+          "id": "mitochondria",
+          "name": "Mitochondria",
+          "short": "Release energy as ATP"
+        },
+        {
+          "id": "er",
+          "name": "Rough endoplasmic reticulum",
+          "short": "Makes and carries proteins"
+        },
+        {
+          "id": "ribosomes",
+          "name": "Ribosomes",
+          "short": "Build proteins"
+        },
+        {
+          "id": "golgi",
+          "name": "Golgi apparatus",
+          "short": "Packages and ships proteins"
+        },
+        {
+          "id": "lysosome",
+          "name": "Lysosomes",
+          "short": "Digest waste"
+        },
+        {
+          "id": "centrosome",
+          "name": "Centrosome",
+          "short": "Organises cell division"
+        }
+      ],
+      "params": [
+        {
+          "id": "cutaway",
+          "label": "Cut-away",
+          "unit": "%",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "value": 60,
+          "kind": "slider"
+        },
+        {
+          "id": "energy",
+          "label": "Energy demand",
+          "unit": "%",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "value": 40,
+          "kind": "slider"
+        },
+        {
+          "id": "secretion",
+          "label": "Protein export",
+          "unit": "%",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "value": 50,
+          "kind": "slider"
+        },
+        {
+          "id": "outside",
+          "label": "Outside solution",
+          "unit": "mOsm/L",
+          "min": 100,
+          "max": 600,
+          "step": 10,
+          "value": 300,
+          "kind": "slider"
+        }
+      ],
+      "actions": [],
+      "equations": [
+        "Respiration: C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + ~30 ATP",
+        "Osmosis: V/V₀ = b + (1 − b)·(c_in / c_out)"
+      ],
+      "keywords": [
+        "cell",
+        "osmosis",
+        "tonicity",
+        "nucleus",
+        "mitochondria",
+        "mitochondrion",
+        "golgi",
+        "ribosome",
+        "organelle",
+        "cytoplasm",
+        "membrane",
+        "lysosome",
+        "reticulum",
+        "animal cell"
+      ]
+    },
+    {
+      "id": "phenolphthalein",
+      "subject": "chemistry",
+      "title": "Phenolphthalein indicator",
+      "concept": "Acids, bases & pH indicators",
+      "summary": "Drip the indicator into solutions from pH 0 to 14 and watch the colour flip as the molecule changes shape.",
+      "parts": [
+        {
+          "id": "dropper",
+          "name": "Dropper",
+          "short": "Adds the indicator"
+        },
+        {
+          "id": "molecule",
+          "name": "Phenolphthalein molecule",
+          "short": "Changes shape with pH"
+        },
+        {
+          "id": "beaker",
+          "name": "Beaker",
+          "short": "Holds the test solution"
+        },
+        {
+          "id": "solution",
+          "name": "Solution",
+          "short": "Its colour reveals the pH"
+        }
+      ],
+      "params": [
+        {
+          "id": "pH",
+          "label": "Solution pH",
+          "unit": null,
+          "min": 0,
+          "max": 14,
+          "step": 0.1,
+          "value": 9,
+          "kind": "slider"
+        }
+      ],
+      "actions": [
+        {
+          "id": "drop",
+          "label": "Add a drop"
+        }
+      ],
+      "equations": [
+        "HIn (colourless) ⇌ In²⁻ (pink) + 2H⁺",
+        "Turns pink from about pH 8.2"
+      ],
+      "keywords": [
+        "phenolphthalein",
+        "indicator",
+        "ph",
+        "acid",
+        "base",
+        "alkali",
+        "beaker",
+        "titration",
+        "litmus",
+        "dropper"
+      ]
+    },
+    {
+      "id": "electrolysis",
+      "subject": "chemistry",
+      "title": "Electrolysis of water",
+      "concept": "Redox at electrodes · Faraday's law",
+      "summary": "Pass a current through water and collect hydrogen and oxygen. See why you always get twice as much hydrogen.",
+      "parts": [
+        {
+          "id": "battery",
+          "name": "Battery (power supply)",
+          "short": "Pushes electrons around"
+        },
+        {
+          "id": "cathode",
+          "name": "Cathode (−)",
+          "short": "Hydrogen forms here"
+        },
+        {
+          "id": "anode",
+          "name": "Anode (+)",
+          "short": "Oxygen forms here"
+        },
+        {
+          "id": "electrolyte",
+          "name": "Electrolyte",
+          "short": "Ions carry the current"
+        },
+        {
+          "id": "h2tube",
+          "name": "Hydrogen tube",
+          "short": "Collects H₂"
+        },
+        {
+          "id": "o2tube",
+          "name": "Oxygen tube",
+          "short": "Collects O₂"
+        }
+      ],
+      "params": [
+        {
+          "id": "voltage",
+          "label": "Battery voltage",
+          "unit": "V",
+          "min": 0,
+          "max": 12,
+          "step": 0.1,
+          "value": 6,
+          "kind": "slider"
+        },
+        {
+          "id": "conc",
+          "label": "Electrolyte (dilute acid)",
+          "unit": "mol/L",
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "value": 0.5,
+          "kind": "slider"
+        }
+      ],
+      "actions": [
+        {
+          "id": "reset",
+          "label": "Empty the tubes"
+        }
+      ],
+      "equations": [
+        "Cathode: 2H₂O + 2e⁻ → H₂ + 2OH⁻",
+        "Anode: 2H₂O → O₂ + 4H⁺ + 4e⁻",
+        "V(H₂) : V(O₂) = 2 : 1"
+      ],
+      "keywords": [
+        "electrolysis",
+        "electrode",
+        "cathode",
+        "anode",
+        "hydrogen",
+        "oxygen",
+        "electrolyte",
+        "water",
+        "voltameter",
+        "hoffman",
+        "faraday"
+      ]
+    }
+  ]
+}

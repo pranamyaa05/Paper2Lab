@@ -39,3 +39,17 @@ htmlcov/
 *.swo
 .DS_Store
 Thumbs.db
+
+# Paper2Lab app
+backend/.venv
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules
+dist
+.env
+.env.local
+*.log
+.DS_Store
+.cache
+*.tsbuildinfo

@@ -1,51 +1,64 @@
-import os
+"""
+Paper2Lab backend.
+
+  UI ──► API gateway (/api/v1) ──► Vision agent ──► Reasoning & validation ──► Simulation orchestrator
+                                └► Spatial tutor agent ──► actions for the 3D view
+                                └► Voice agent (translation + speech)
+  Every Gemini call passes through the efficiency layer (cache · coalesce · route · cool-down · pace).
+
+The simulation itself runs in the browser at 60 fps from the same shared registry, so the backend is
+never in the animation loop; the tutor receives a snapshot of the live state with each question.
+
+Run:  uvicorn app.main:app --reload --port 8000   (from backend/)
+"""
+from __future__ import annotations
+
+import logging
+from contextlib import asynccontextmanager
+from dataclasses import dataclass
+
+import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
-from app.core.config import settings
-from app.api.v1.router import api_router
+from .agents.orchestrator import SimulationOrchestrator
+from .agents.reasoning import ScientificReasoningEngine
+from .agents.tutor import SpatialTutorAgent
+from .agents.vision import VisionAgent
+from .agents.voice import VoiceAgent
+from .api.v1.routes import router
+from .core.config import settings
+from .core.efficiency import Efficiency
+from .core.gemini import GeminiClient
 
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.VERSION,
-    description="Backend API for Paper2Lab: Turning Static Textbook Diagrams into Interactive, AI-Powered Science Laboratories.",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    docs_url=f"{settings.API_V1_STR}/docs",
-    redoc_url=f"{settings.API_V1_STR}/redoc",
-)
-
-# CORS setup for Web / Three.js frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-app.include_router(api_router, prefix=settings.API_V1_STR)
-
-# Mount static directory for the test frontend
-static_dir = os.path.join(os.path.dirname(__file__), "static")
-if os.path.exists(static_dir):
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+logging.basicConfig(level=logging.INFO, format="[paper2lab] %(message)s")
 
 
-@app.get("/")
-async def root():
-    # If the interactive visual testbed exists, serve it directly at root!
-    index_file = os.path.join(static_dir, "index.html")
-    if os.path.exists(index_file):
-        return FileResponse(index_file)
-    return {
-        "message": "Welcome to Paper2Lab API: Turning Static Textbook Diagrams into Interactive 3D Science Laboratories.",
-        "docs": f"{settings.API_V1_STR}/docs",
-        "health": f"{settings.API_V1_STR}/health"
-    }
+@dataclass
+class Agents:
+    gemini: GeminiClient
+    orchestrator: SimulationOrchestrator
+    tutor: SpatialTutorAgent
+    voice: VoiceAgent
 
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, reload=True)
+def build_agents(http: httpx.AsyncClient, cache: bool = True) -> Agents:
+    gemini = GeminiClient(Efficiency(settings.cache_dir if cache else None, settings.gemini_rpm), http)
+    return Agents(
+        gemini=gemini,
+        orchestrator=SimulationOrchestrator(VisionAgent(gemini), ScientificReasoningEngine()),
+        tutor=SpatialTutorAgent(gemini),
+        voice=VoiceAgent(gemini, http),
+    )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with httpx.AsyncClient() as http:
+        app.state.agents = build_agents(http)
+        yield
+
+
+app = FastAPI(title="Paper2Lab API", version="1.0.0", lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins), allow_methods=["*"], allow_headers=["*"])
+app.include_router(router)

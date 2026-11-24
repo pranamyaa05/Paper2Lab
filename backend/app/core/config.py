@@ -1,40 +1,39 @@
+"""Settings, read from the project's .env file (one level above backend/) and the environment."""
+from __future__ import annotations
+
 import os
-from typing import List
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from dataclasses import dataclass, field
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]  # paper2lab/
 
 
-class Settings(BaseSettings):
-    PROJECT_NAME: str = "Paper2Lab Backend API"
-    VERSION: str = "1.0.0"
-    API_V1_STR: str = "/api/v1"
-    
-    # AI Credentials
-    GEMINI_API_KEY: str = ""
-    ELEVENLABS_API_KEY: str = ""
-    ELEVENLABS_DEFAULT_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"  # Rachel / clear voice
-    
-    # Server & CORS
-    HOST: str = "0.0.0.0"
-    PORT: int = 8000
-    CORS_ORIGINS: List[str] = [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8080",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:8080",
-        "*"
-    ]
-    
-    # Upload limits
-    MAX_UPLOAD_SIZE_MB: int = 15
-    ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+def _load_dotenv(path: Path) -> None:
+    """Minimal .env reader so the backend needs no extra dependency. Real env vars win."""
+    if not path.exists():
+        return
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
 
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore"
-    )
+
+_load_dotenv(ROOT / ".env")
+
+
+@dataclass(frozen=True)
+class Settings:
+    gemini_api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
+    gemini_model: str = field(default_factory=lambda: os.getenv("GEMINI_MODEL", "gemini-3.8-flash"))
+    gemini_rpm: int = field(default_factory=lambda: max(1, int(os.getenv("GEMINI_RPM", "8") or 8)))
+    elevenlabs_api_key: str = field(default_factory=lambda: os.getenv("ELEVENLABS_API_KEY", ""))
+    elevenlabs_voice_id: str = field(default_factory=lambda: os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM"))
+    elevenlabs_model: str = field(default_factory=lambda: os.getenv("ELEVENLABS_MODEL", "eleven_multilingual_v2"))
+    cache_dir: Path = field(default_factory=lambda: Path(os.getenv("PAPER2LAB_CACHE_DIR", str(ROOT / ".cache" / "gemini"))))
+    registry_path: Path = ROOT / "shared" / "registry.json"
+    cors_origins: tuple[str, ...] = ("http://localhost:5173", "http://127.0.0.1:5173")
 
 
 settings = Settings()

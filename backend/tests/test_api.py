@@ -1,145 +1,69 @@
-import io
+"""End-to-end through FastAPI with Gemini replaced by a stub (no network, no quota)."""
+import base64
+import json
+
+import httpx
 import pytest
 from fastapi.testclient import TestClient
-from PIL import Image
 
-from app.main import app
-
-client = TestClient(app)
-
-
-def create_test_image_bytes():
-    file = io.BytesIO()
-    image = Image.new('RGB', (200, 200), color='blue')
-    image.save(file, 'PNG')
-    file.seek(0)
-    return file.read()
+from app import main
+from app.core import config
+from app.core.efficiency import CallResult
 
 
-def test_health_endpoint():
-    response = client.get("/api/v1/health")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["status"] == "healthy"
-    assert "features" in data
+@pytest.fixture
+def client(monkeypatch):
+    monkeypatch.setattr(config.settings.__class__, "gemini_api_key", property(lambda self: "test-key"), raising=False)
+    replies: list[dict] = []
+    calls: list[str] = []
+
+    async def fake_send(self, task, parts):
+        calls.append(task)
+        return CallResult(json.dumps(replies.pop(0)), "stub-lite", 50, 10, 0)
+
+    monkeypatch.setattr("app.core.gemini.GeminiClient.send", fake_send)
+    monkeypatch.setattr(main, "build_agents", lambda http, cache=True, _orig=main.build_agents: _orig(http, cache=False))
+    with TestClient(main.app) as c:
+        c.replies = replies  # type: ignore[attr-defined]
+        c.calls = calls  # type: ignore[attr-defined]
+        yield c
 
 
-def test_list_templates():
-    response = client.get("/api/v1/diagram/templates")
-    assert response.status_code == 200
-    templates = response.json()
-    assert len(templates) >= 3
-    template_ids = [t["template_id"] for t in templates]
-    assert "dc_motor_3d" in template_ids
-    assert "electrolysis_cell_3d" in template_ids
-    assert "animal_cell_3d" in template_ids
+IMG = base64.b64encode(b"\xff\xd8\xff fake jpeg").decode()
 
 
-def test_get_single_template():
-    response = client.get("/api/v1/diagram/templates/dc_motor_3d")
-    assert response.status_code == 200
-    template = response.json()
-    assert template["template_id"] == "dc_motor_3d"
-    assert len(template["variables"]) > 0
-    assert len(template["telemetry"]) > 0
-    assert len(template["entities_3d"]) > 0
+def test_health_and_registry(client):
+    assert client.get("/api/v1/health").json() == {"status": "ok"}
+    ids = [t["id"] for t in client.get("/api/v1/registry").json()["templates"]]
+    assert "dc-motor" in ids and len(ids) == 6
 
 
-def test_compute_telemetry_dc_motor():
-    payload = {
-        "template_id": "dc_motor_3d",
-        "variables": {
-            "voltage": 12.0,
-            "magnetic_field": 0.5,
-            "coil_turns": 50.0,
-            "load_torque": 0.05,
-            "armature_resistance": 1.2
-        }
-    }
-    response = client.post("/api/v1/diagram/telemetry", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert "telemetry_values" in data
-    assert "rpm" in data["telemetry_values"]
-    assert data["telemetry_values"]["rpm"] > 0
-    assert data["telemetry_values"]["current_amp"] > 0
+def test_analyze_template_flow_and_cache(client):
+    client.replies.append({"template": "dc-motor", "title": "Motor", "confidence": 0.9, "parts": [{"id": "coil", "bbox": [0.3, 0.3, 0.3, 0.3]}], "params": [{"id": "voltage", "value": 50}]})
+    out = client.post("/api/v1/diagram/analyze", json={"image": IMG}).json()
+    assert out["mode"] == "template" and out["spec"]["template"] == "dc-motor"
+    assert out["spec"]["params"] == [{"id": "voltage", "value": 12}]
+    again = client.post("/api/v1/diagram/analyze", json={"image": IMG}).json()
+    assert again["meta"]["cached"] is True and client.calls == ["analyze"]
 
 
-def test_compute_telemetry_electrolysis():
-    payload = {
-        "template_id": "electrolysis_cell_3d",
-        "variables": {
-            "cell_voltage": 6.0,
-            "electrolyte_concentration": 0.5,
-            "temperature_c": 25.0,
-            "electrode_surface_area": 5.0
-        }
-    }
-    response = client.post("/api/v1/diagram/telemetry", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert "telemetry_values" in data
-    assert data["telemetry_values"]["h2_rate_ml_min"] > 0
-    assert data["telemetry_values"]["o2_rate_ml_min"] > 0
-    # Stoichiometric ratio check: H2 rate should be ~ 2x O2 rate
-    h2 = data["telemetry_values"]["h2_rate_ml_min"]
-    o2 = data["telemetry_values"]["o2_rate_ml_min"]
-    assert abs((h2 / o2) - 2.0) < 0.1
+def test_analyze_rejects_bad_base64(client):
+    assert client.post("/api/v1/diagram/analyze", json={"image": "not base64!!"}).status_code == 400
 
 
-def test_upload_and_analyze_diagram():
-    img_bytes = create_test_image_bytes()
-    files = {"file": ("test_dc_motor.png", img_bytes, "image/png")}
-    data = {"context_hint": "Electric motor with split ring commutator"}
-    
-    response = client.post("/api/v1/diagram/upload", files=files, data=data)
-    assert response.status_code == 200
-    res = response.json()
-    
-    # Verify answers to all 6 core questions:
-    # 1. What is represented?
-    assert "representation_overview" in res
-    assert "concept_title" in res
-    # 2. What are its components?
-    assert len(res["components"]) > 0
-    # 3. How are the components connected?
-    assert len(res["connections"]) > 0
-    # 4. What scientific or logical principles govern it?
-    assert len(res["governing_principles"]) > 0
-    # 5. What kind of interactive experience would best explain it?
-    assert "simulation_spec" in res
-    assert res["simulation_spec"]["template_id"] == "dc_motor_3d"
-    # 6. How can the student experiment with it and ask questions?
-    assert len(res["suggested_experiments"]) > 0
-    assert len(res["sample_questions"]) > 0
+def test_tutor_returns_grounded_actions(client):
+    client.replies.append({"answer": "The pulley only changes the direction of the tension.", "highlight": "pulley", "rotate": True})
+    lab = {"title": "Pulley", "template": "pulley-incline", "parts": [{"id": "pulley", "name": "Pulley"}], "params": [], "actions": []}
+    out = client.post("/api/v1/tutor/ask", json={"question": "why is the pulley there?", "lab": lab}).json()
+    assert out["grounded"] == "pulley"
+    assert {"type": "focus", "part": "pulley"} in out["actions"] and {"type": "rotate"} in out["actions"]
 
 
-def test_ask_diagram_with_actions():
-    payload = {
-        "diagram_id": "diag_test_123",
-        "question": "What happens if I increase the voltage to 20V?",
-        "current_variables": {"voltage": 12.0},
-        "language": "en",
-        "generate_speech": True
-    }
-    response = client.post("/api/v1/ask", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert "answer" in data
-    assert len(data["simulation_actions"]) > 0
-    # Should include action setting the variable
-    actions = [a["action_type"] for a in data["simulation_actions"]]
-    assert "set_variable" in actions or "highlight" in actions
-    assert "audio_base64" in data
-
-
-def test_voice_speak():
-    payload = {
-        "text": "The Lorentz force drives the rotation of the motor armature.",
-        "language": "en"
-    }
-    response = client.post("/api/v1/voice/speak", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert "audio_base64" in data
-    assert len(data["audio_base64"]) > 0
+def test_translate_batches_and_caches_lines(client):
+    client.replies.append({"texts": ["A-hi", "B-hi"]})
+    first = client.post("/api/v1/voice/translate", json={"texts": ["A", "B"], "language": "hi-IN"}).json()
+    assert first["texts"] == ["A-hi", "B-hi"] and first["sent"] == 2
+    second = client.post("/api/v1/voice/translate", json={"texts": ["B", "A"], "language": "hi-IN"}).json()
+    assert second["texts"] == ["B-hi", "A-hi"] and second["sent"] == 0
+    usage = client.get("/api/v1/usage").json()
+    assert usage["cacheHits"] >= 2
