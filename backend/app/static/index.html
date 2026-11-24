@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paper2Lab – Interactive 3D Science Laboratory Testbed</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js and OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <style>
+    body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+    #canvas-container { width: 100%; height: 420px; position: relative; border-radius: 0.75rem; overflow: hidden; background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%); }
+    .glass-card { background: rgba(30, 41, 59, 0.75); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.1); }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-6">
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Header -->
+    <header class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-700/60 pb-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">🔬⚡</span>
+          <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 via-indigo-300 to-teal-300 bg-clip-text text-transparent">
+            Paper2Lab Live Test Lab
+          </h1>
+          <span class="text-xs bg-emerald-500/20 text-emerald-400 font-mono px-2 py-0.5 rounded border border-emerald-500/30">Backend Connected</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">Turning Static Textbook Diagrams into Interactive, Scientifically Grounded 3D Laboratories</p>
+      </div>
+      <div class="flex gap-2">
+        <a href="/api/v1/docs" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-blue-400 font-medium px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-1.5 transition">
+          <span>📚</span> Swagger Docs
+        </a>
+        <a href="/api/v1/health" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 text-emerald-400 font-medium px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-1.5 transition">
+          <span>💚</span> Health Check
+        </a>
+      </div>
+    </header>
+
+    <!-- Top: Upload & Diagram Ingestion Section -->
+    <section class="glass-card rounded-xl p-5 shadow-lg space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-200 flex items-center gap-2">
+            <span>📷</span> 1. Ingest Textbook Diagram
+          </h2>
+          <p class="text-xs text-slate-400">Upload a diagram or choose a pre-loaded textbook sample</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="loadSample('dc_motor')" class="text-xs bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border border-indigo-500/40 px-3 py-1.5 rounded-lg transition">
+            Preset: DC Motor (Physics)
+          </button>
+          <button onclick="loadSample('electrolysis')" class="text-xs bg-teal-600/30 hover:bg-teal-600/50 text-teal-300 border border-teal-500/40 px-3 py-1.5 rounded-lg transition">
+            Preset: Water Electrolysis (Chemistry)
+          </button>
+          <button onclick="loadSample('animal_cell')" class="text-xs bg-pink-600/30 hover:bg-pink-600/50 text-pink-300 border border-pink-500/40 px-3 py-1.5 rounded-lg transition">
+            Preset: Animal Cell (Biology)
+          </button>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-4 items-center border border-dashed border-slate-700 rounded-lg p-4 bg-slate-900/40">
+        <input type="file" id="diagramInput" accept="image/*" class="text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
+        <input type="text" id="contextHint" placeholder="Optional context (e.g. 'Chapter 12: Electromagnetic Induction')" class="flex-1 w-full bg-slate-800 border border-slate-700 rounded-md px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500">
+        <button onclick="uploadDiagram()" id="uploadBtn" class="w-full sm:w-auto text-xs bg-blue-600 hover:bg-blue-500 font-semibold text-white px-4 py-2 rounded-md transition shadow flex items-center justify-center gap-2">
+          <span>🚀</span> Analyze Diagram
+        </button>
+      </div>
+
+      <!-- Analysis Results Bar -->
+      <div id="analysisSummary" class="hidden bg-slate-800/80 rounded-lg p-4 border border-slate-700 text-xs space-y-2">
+        <div class="flex justify-between items-center border-b border-slate-700/80 pb-2">
+          <span id="conceptTitle" class="font-bold text-sm text-blue-400"></span>
+          <span id="disciplineBadge" class="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-blue-900/40 text-blue-300 border border-blue-700"></span>
+        </div>
+        <p id="conceptDesc" class="text-slate-300 leading-relaxed"></p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+          <div class="bg-slate-900/60 p-2.5 rounded border border-slate-700/50">
+            <span class="font-semibold text-amber-400">Detected Components:</span>
+            <ul id="componentsList" class="mt-1 list-disc list-inside space-y-0.5 text-slate-400"></ul>
+          </div>
+          <div class="bg-slate-900/60 p-2.5 rounded border border-slate-700/50">
+            <span class="font-semibold text-emerald-400">Governing Principles:</span>
+            <ul id="principlesList" class="mt-1 list-disc list-inside space-y-0.5 text-slate-400"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Middle: 3D Simulation Viewport & Dynamic Controls -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Left 2 Cols: 3D Canvas + Telemetry -->
+      <div class="lg:col-span-2 space-y-4">
+        <div class="glass-card rounded-xl p-4 shadow-lg">
+          <div class="flex justify-between items-center mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-lg">🕹️</span>
+              <h2 id="simTitle" class="text-base font-semibold text-slate-200">Interactive 3D Experiment</h2>
+            </div>
+            <span class="text-xs text-slate-400 flex items-center gap-1">
+              <span>🖱️</span> Drag to rotate | Scroll to zoom
+            </span>
+          </div>
+
+          <div id="canvas-container">
+            <div id="canvas-loading" class="absolute inset-0 flex items-center justify-center bg-slate-900/70 text-xs text-slate-400">
+              Initializing 3D Simulation Scene...
+            </div>
+          </div>
+
+          <!-- Live Telemetry Readout Grid -->
+          <div id="telemetryGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-4">
+            <!-- Dynamic Telemetry Cards -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Right 1 Col: Dynamic Physics Sliders & Ask Your Diagram -->
+      <div class="space-y-4">
+        
+        <!-- Controls Panel -->
+        <div class="glass-card rounded-xl p-4 shadow-lg space-y-3">
+          <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+            <span>⚙️</span> Parameter Adjustments
+          </h2>
+          <p class="text-[11px] text-slate-400">Modify physical variables to trigger backend equation recalculations:</p>
+          <div id="slidersContainer" class="space-y-3 text-xs">
+            <!-- Dynamically populated sliders -->
+          </div>
+        </div>
+
+        <!-- Ask Your Diagram Agentic Companion -->
+        <div class="glass-card rounded-xl p-4 shadow-lg space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+              <span>🤖</span> Ask Your Diagram
+            </h2>
+            <div class="flex items-center gap-1.5 text-[11px]">
+              <label for="voiceToggle" class="text-slate-400 cursor-pointer">Audio Voice</label>
+              <input type="checkbox" id="voiceToggle" checked class="rounded border-slate-700 bg-slate-800 text-blue-600 focus:ring-0">
+            </div>
+          </div>
+
+          <div id="chatHistory" class="space-y-2 max-h-48 overflow-y-auto text-xs pr-1">
+            <div class="bg-slate-800/90 p-2.5 rounded-lg border border-slate-700/60 text-slate-300">
+              👋 I am your AI Lab Partner. Ask me how this system works, or tell me to change a variable!
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="flex gap-1.5 flex-wrap" id="quickQuestions">
+              <!-- Quick buttons -->
+            </div>
+            <div class="flex gap-2 pt-1">
+              <input type="text" id="questionInput" placeholder="e.g. Why does it rotate continuously?" class="flex-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500">
+              <button onclick="askQuestion()" id="askBtn" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded transition font-medium">
+                Ask
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Audio Player (Hidden by default) -->
+    <audio id="ttsAudio" class="hidden"></audio>
+
+  </div>
+
+  <script>
+    // Global State
+    let scene, camera, renderer, controls;
+    let motorCoil, shaftGroup, bubblesCathode = [], bubblesAnode = [];
+    let currentTemplateId = "dc_motor_3d";
+    let currentVariables = { voltage: 12.0, magnetic_field: 0.5, coil_turns: 50.0, load_torque: 0.05, armature_resistance: 1.2 };
+    let currentRpm = 1146.0;
+
+    // 1. Initialize Three.js Scene
+    function initThree() {
+      const container = document.getElementById("canvas-container");
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.set(0, 3.5, 6.5);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+
+      // Lights
+      const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambient);
+
+      const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+      dirLight1.position.set(5, 10, 7);
+      scene.add(dirLight1);
+
+      const dirLight2 = new THREE.DirectionalLight(0x38bdf8, 0.4);
+      dirLight2.position.set(-5, -5, -5);
+      scene.add(dirLight2);
+
+      // Build DC Motor 3D scene by default
+      buildDcMotorScene();
+
+      document.getElementById("canvas-loading").style.display = "none";
+      animate();
+
+      window.addEventListener("resize", onWindowResize);
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById("canvas-container");
+      if (!container || !renderer) return;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+
+    // 2. Build 3D Models
+    function clearScene() {
+      while(scene.children.length > 0){ 
+        const obj = scene.children[0];
+        scene.remove(obj); 
+      }
+      const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+      scene.add(ambient);
+      const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+      dirLight1.position.set(5, 10, 7);
+      scene.add(dirLight1);
+      shaftGroup = null;
+      motorCoil = null;
+    }
+
+    function buildDcMotorScene() {
+      clearScene();
+      currentTemplateId = "dc_motor_3d";
+
+      // Stator Magnets: North (Red) and South (Blue)
+      const magnetGeo = new THREE.BoxGeometry(0.8, 1.8, 2.5);
+      const matNorth = new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.3, roughness: 0.4 });
+      const northMesh = new THREE.Mesh(magnetGeo, matNorth);
+      northMesh.position.set(-2.4, 0, 0);
+      scene.add(northMesh);
+
+      const matSouth = new THREE.MeshStandardMaterial({ color: 0x2563eb, metalness: 0.3, roughness: 0.4 });
+      const southMesh = new THREE.Mesh(magnetGeo, matSouth);
+      southMesh.position.set(2.4, 0, 0);
+      scene.add(southMesh);
+
+      // Rotating Rotor Shaft Group
+      shaftGroup = new THREE.Group();
+
+      // Steel Shaft
+      const shaftGeo = new THREE.CylinderGeometry(0.08, 0.08, 4.0, 16);
+      const shaftMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 });
+      const shaftMesh = new THREE.Mesh(shaftGeo, shaftMat);
+      shaftMesh.rotation.x = Math.PI / 2;
+      shaftGroup.add(shaftMesh);
+
+      // Armature Copper Coil (Rectangular Loop)
+      const coilMat = new THREE.MeshStandardMaterial({ color: 0xd97706, metalness: 0.6, roughness: 0.3 });
+      
+      const arm1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.6, 0.06), coilMat);
+      arm1.position.set(1.2, 0, 0);
+      shaftGroup.add(arm1);
+
+      const arm2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.6, 0.06), coilMat);
+      arm2.position.set(-1.2, 0, 0);
+      shaftGroup.add(arm2);
+
+      const armTop = new THREE.Mesh(new THREE.BoxGeometry(2.46, 0.06, 0.06), coilMat);
+      armTop.position.set(0, 0.8, 0);
+      shaftGroup.add(armTop);
+
+      const armBottom = new THREE.Mesh(new THREE.BoxGeometry(2.46, 0.06, 0.06), coilMat);
+      armBottom.position.set(0, -0.8, 0);
+      shaftGroup.add(armBottom);
+
+      // Split-Ring Commutator (Brass segments)
+      const commGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.4, 16, 1, false, 0, Math.PI * 0.9);
+      const commMat = new THREE.MeshStandardMaterial({ color: 0xeab308, metalness: 0.9, roughness: 0.2, side: THREE.DoubleSide });
+      const ring1 = new THREE.Mesh(commGeo, commMat);
+      ring1.position.set(0, 0, 1.4);
+      ring1.rotation.x = Math.PI / 2;
+      shaftGroup.add(ring1);
+
+      const ring2 = new THREE.Mesh(commGeo, commMat);
+      ring2.position.set(0, 0, 1.4);
+      ring2.rotation.x = Math.PI / 2;
+      ring2.rotation.z = Math.PI;
+      shaftGroup.add(ring2);
+
+      scene.add(shaftGroup);
+
+      // Stationary Graphite Carbon Brushes
+      const brushMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+      const brushGeo = new THREE.BoxGeometry(0.15, 0.15, 0.25);
+      
+      const brushPos = new THREE.Mesh(brushGeo, brushMat);
+      brushPos.position.set(0.35, 0, 1.4);
+      scene.add(brushPos);
+
+      const brushNeg = new THREE.Mesh(brushGeo, brushMat);
+      brushNeg.position.set(-0.35, 0, 1.4);
+      scene.add(brushNeg);
+
+      // Magnetic Field Lines Indicator (Dashed arrows from North to South)
+      const fieldArrow = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(-1.8, 0, 0), 3.6, 0x38bdf8, 0.2, 0.15);
+      scene.add(fieldArrow);
+
+      motorCoil = shaftGroup;
+    }
+
+    // 3. Animation Loop
+    function animate() {
+      requestAnimationFrame(animate);
+      if (controls) controls.update();
+
+      // Spin motor shaft proportional to calculated RPM
+      if (shaftGroup && currentRpm > 0) {
+        const radPerSec = (currentRpm * 2 * Math.PI) / 60;
+        shaftGroup.rotation.z += radPerSec * 0.003; // Scaled for visible animation
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // 4. API Calls
+    async function loadSample(type) {
+      if (type === "dc_motor") {
+        buildDcMotorScene();
+        currentVariables = { voltage: 12.0, magnetic_field: 0.5, coil_turns: 50.0, load_torque: 0.05, armature_resistance: 1.2 };
+        updateSlidersUI([
+          { key: "voltage", label: "Voltage", unit: "V", min: 0, max: 24, step: 0.5, val: 12 },
+          { key: "magnetic_field", label: "Magnetic Field", unit: "T", min: 0.1, max: 2.0, step: 0.05, val: 0.5 },
+          { key: "coil_turns", label: "Coil Turns", unit: "turns", min: 10, max: 200, step: 10, val: 50 },
+          { key: "load_torque", label: "Load Torque", unit: "N·m", min: 0, max: 0.5, step: 0.02, val: 0.05 },
+          { key: "armature_resistance", label: "Resistance", unit: "Ω", min: 0.5, max: 5.0, step: 0.1, val: 1.2 }
+        ]);
+        updateAnalysisCard({
+          title: "Direct Current (DC) Electric Motor",
+          discipline: "Physics",
+          desc: "Converts electrical energy to mechanical rotation via Lorentz force and split-ring commutation.",
+          components: ["Permanent Stator Magnets (North/South)", "Rotating Armature Copper Coil", "Split-Ring Commutator", "Carbon Graphite Brushes", "Steel Drive Shaft"],
+          principles: ["Lorentz Force Law: F = I (L × B)", "Back-EMF: Eb = ke · Φ · ω", "Ohm's Law: V = Eb + I · R"]
+        });
+        setQuickQuestions([
+          "Why is the split-ring commutator needed?",
+          "What happens if I increase voltage to 20V?",
+          "Where are the carbon brushes?"
+        ]);
+      } else if (type === "electrolysis") {
+        currentTemplateId = "electrolysis_cell_3d";
+        currentVariables = { cell_voltage: 6.0, electrolyte_concentration: 0.5, temperature_c: 25.0, electrode_surface_area: 5.0 };
+        updateSlidersUI([
+          { key: "cell_voltage", label: "Applied Voltage", unit: "V", min: 0, max: 12, step: 0.2, val: 6.0 },
+          { key: "electrolyte_concentration", label: "Acid Conc (H2SO4)", unit: "M", min: 0.01, max: 2.0, step: 0.05, val: 0.5 },
+          { key: "temperature_c", label: "Temperature", unit: "°C", min: 10, max: 90, step: 1, val: 25.0 },
+          { key: "electrode_surface_area", label: "Electrode Area", unit: "cm²", min: 1, max: 20, step: 0.5, val: 5.0 }
+        ]);
+        updateAnalysisCard({
+          title: "Electrolysis of Water (Hofmann Voltameter)",
+          discipline: "Chemistry",
+          desc: "Electrochemical decomposition of water into hydrogen and oxygen gases at a 2:1 stoichiometric volume ratio.",
+          components: ["Platinum Anode (+)", "Platinum Cathode (-)", "Acidulated Water (H2SO4) Electrolyte", "Cathode H2 Collection Column", "Anode O2 Collection Column"],
+          principles: ["Cathode Reduction: 4H+ + 4e- -> 2H2", "Anode Oxidation: 2H2O -> O2 + 4H+ + 4e-", "Faraday's Law of Electrolysis"]
+        });
+        setQuickQuestions([
+          "Why is cathode volume twice the anode volume?",
+          "What happens below 1.23 Volts?",
+          "Why is pure water an insulator?"
+        ]);
+      } else if (type === "animal_cell") {
+        currentTemplateId = "animal_cell_3d";
+        currentVariables = { atp_demand: 50.0, extracellular_tonicity: 300.0, oxygen_availability: 40.0 };
+        updateSlidersUI([
+          { key: "atp_demand", label: "ATP Energy Demand", unit: "%", min: 10, max: 100, step: 5, val: 50 },
+          { key: "extracellular_tonicity", label: "Tonicity", unit: "mOsm/L", min: 150, max: 450, step: 10, val: 300 },
+          { key: "oxygen_availability", label: "Oxygen Level pO2", unit: "mmHg", min: 0, max: 100, step: 5, val: 40 }
+        ]);
+        updateAnalysisCard({
+          title: "Eukaryotic Animal Cell Dynamics",
+          discipline: "Biology",
+          desc: "Explorable cellular architecture focusing on ATP synthesis in mitochondria and osmotic membrane equilibrium.",
+          components: ["Plasma Membrane", "Nucleus & DNA", "Mitochondria (Powerhouse)", "Endoplasmic Reticulum", "Golgi Apparatus"],
+          principles: ["Chemiosmotic ATP Synthesis", "Van 't Hoff Law for Osmotic Pressure", "Anaerobic vs Aerobic Respiration"]
+        });
+        setQuickQuestions([
+          "What do mitochondria do?",
+          "What happens if tonicity drops below 200 mOsm/L?",
+          "Why do animal cells burst without a cell wall?"
+        ]);
+      }
+      recalculateTelemetry();
+    }
+
+    async function recalculateTelemetry() {
+      try {
+        const resp = await fetch("/api/v1/diagram/telemetry", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            template_id: currentTemplateId,
+            variables: currentVariables
+          })
+        });
+        const data = await resp.json();
+        renderTelemetry(data.telemetry_values);
+        if (data.telemetry_values.rpm !== undefined) {
+          currentRpm = data.telemetry_values.rpm;
+        }
+      } catch (err) {
+        console.error("Telemetry error:", err);
+      }
+    }
+
+    function renderTelemetry(metrics) {
+      const grid = document.getElementById("telemetryGrid");
+      grid.innerHTML = "";
+      for (const [key, val] of Object.entries(metrics)) {
+        const card = document.createElement("div");
+        card.className = "bg-slate-800/90 border border-slate-700/70 rounded-lg p-2 text-center";
+        card.innerHTML = `
+          <div class="text-[10px] text-slate-400 uppercase tracking-wider truncate">${key.replace(/_/g, ' ')}</div>
+          <div class="text-sm font-bold text-blue-300 mt-0.5">${val}</div>
+        `;
+        grid.appendChild(card);
+      }
+    }
+
+    function updateSlidersUI(sliders) {
+      const container = document.getElementById("slidersContainer");
+      container.innerHTML = "";
+      sliders.forEach(s => {
+        const div = document.createElement("div");
+        div.className = "space-y-1";
+        div.innerHTML = `
+          <div class="flex justify-between text-xs text-slate-300">
+            <span>${s.label} (${s.unit})</span>
+            <span id="val_${s.key}" class="font-mono text-blue-400 font-semibold">${s.val}</span>
+          </div>
+          <input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${s.val}" 
+                 class="w-full accent-blue-500 cursor-pointer"
+                 oninput="onSliderChange('${s.key}', this.value)">
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function onSliderChange(key, value) {
+      currentVariables[key] = parseFloat(value);
+      const span = document.getElementById(`val_${key}`);
+      if (span) span.innerText = value;
+      recalculateTelemetry();
+    }
+
+    function updateAnalysisCard(info) {
+      document.getElementById("analysisSummary").classList.remove("hidden");
+      document.getElementById("conceptTitle").innerText = info.title;
+      document.getElementById("disciplineBadge").innerText = info.discipline;
+      document.getElementById("conceptDesc").innerText = info.desc;
+      
+      const compList = document.getElementById("componentsList");
+      compList.innerHTML = info.components.map(c => `<li>${c}</li>`).join("");
+
+      const prinList = document.getElementById("principlesList");
+      prinList.innerHTML = info.principles.map(p => `<li>${p}</li>`).join("");
+    }
+
+    function setQuickQuestions(questions) {
+      const qq = document.getElementById("quickQuestions");
+      qq.innerHTML = questions.map(q => 
+        `<button onclick="askPreset('${q}')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded px-2 py-1 transition">${q}</button>`
+      ).join("");
+    }
+
+    function askPreset(q) {
+      document.getElementById("questionInput").value = q;
+      askQuestion();
+    }
+
+    async function askQuestion() {
+      const input = document.getElementById("questionInput");
+      const question = input.value.trim();
+      if (!question) return;
+
+      const chatHistory = document.getElementById("chatHistory");
+      chatHistory.innerHTML += `
+        <div class="bg-blue-900/30 border border-blue-700/50 p-2.5 rounded-lg text-slate-200">
+          <strong>Student:</strong> ${question}
+        </div>
+      `;
+      input.value = "";
+      chatHistory.scrollTop = chatHistory.scrollHeight;
+
+      const voiceWanted = document.getElementById("voiceToggle").checked;
+
+      try {
+        const resp = await fetch("/api/v1/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            diagram_id: "diag_current",
+            question: question,
+            current_variables: currentVariables,
+            language: "en",
+            generate_speech: voiceWanted
+          })
+        });
+
+        const data = await resp.json();
+
+        // Display AI response
+        chatHistory.innerHTML += `
+          <div class="bg-slate-800 p-2.5 rounded-lg border border-slate-700 text-slate-200 space-y-1">
+            <div><strong>Paper2Lab AI:</strong> ${data.answer}</div>
+            ${data.scientific_rationale ? `<div class="text-[11px] text-amber-300/90 italic">📐 ${data.scientific_rationale}</div>` : ''}
+          </div>
+        `;
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+
+        // Execute returned 3D simulation actions (e.g. highlight or set_variable)
+        if (data.simulation_actions && data.simulation_actions.length > 0) {
+          data.simulation_actions.forEach(action => {
+            if (action.action_type === "set_variable" && action.target_id && action.value) {
+              const slider = document.querySelector(`input[oninput*="${action.target_id}"]`);
+              if (slider) {
+                slider.value = action.value;
+                onSliderChange(action.target_id, action.value);
+              }
+            } else if (action.action_type === "highlight") {
+              // Highlight visual feedback
+              flash3dHighlight();
+            }
+          });
+        }
+
+        // Play audio if available
+        if (data.audio_base64) {
+          const audio = document.getElementById("ttsAudio");
+          audio.src = `data:audio/mp3;base64,${data.audio_base64}`;
+          audio.play().catch(e => console.log("Audio autoplay prevented"));
+        }
+
+      } catch (err) {
+        console.error("Ask error:", err);
+      }
+    }
+
+    function flash3dHighlight() {
+      if (!shaftGroup) return;
+      const originalScale = shaftGroup.scale.x;
+      shaftGroup.scale.set(1.15, 1.15, 1.15);
+      setTimeout(() => {
+        shaftGroup.scale.set(originalScale, originalScale, originalScale);
+      }, 600);
+    }
+
+    async function uploadDiagram() {
+      const fileInput = document.getElementById("diagramInput");
+      const hint = document.getElementById("contextHint").value;
+      if (!fileInput.files || fileInput.files.length === 0) {
+        alert("Please select an image file to upload.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+      if (hint) formData.append("context_hint", hint);
+
+      const btn = document.getElementById("uploadBtn");
+      btn.innerText = "Analyzing...";
+      btn.disabled = true;
+
+      try {
+        const resp = await fetch("/api/v1/diagram/upload", {
+          method: "POST",
+          body: formData
+        });
+        const data = await resp.json();
+
+        updateAnalysisCard({
+          title: data.concept_title,
+          discipline: data.discipline,
+          desc: data.representation_overview || data.summary,
+          components: data.components.map(c => `${c.name}: ${c.description}`),
+          principles: data.governing_principles.map(p => `${p.name}: ${p.latex || p.description}`)
+        });
+
+        if (data.simulation_spec) {
+          currentTemplateId = data.simulation_spec.template_id;
+          const vars = {};
+          const sliders = [];
+          data.simulation_spec.variables.forEach(v => {
+            vars[v.key] = v.current_value;
+            sliders.push({ key: v.key, label: v.label, unit: v.unit, min: v.min_value, max: v.max_value, step: v.step, val: v.current_value });
+          });
+          currentVariables = vars;
+          updateSlidersUI(sliders);
+        }
+
+        if (data.sample_questions) {
+          setQuickQuestions(data.sample_questions);
+        }
+
+        recalculateTelemetry();
+
+      } catch (err) {
+        console.error("Upload error:", err);
+        alert("Error analyzing diagram: " + err.message);
+      } finally {
+        btn.innerText = "🚀 Analyze Diagram";
+        btn.disabled = false;
+      }
+    }
+
+    // Startup initialization
+    window.addEventListener("DOMContentLoaded", () => {
+      initThree();
+      loadSample("dc_motor");
+    });
+  </script>
+</body>
+</html>
