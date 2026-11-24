@@ -91,6 +91,7 @@ function CameraDirector({
       return;
     }
     if (command.kind === "reset") {
+      spinUntil.current = 0;
       goal.current = view;
       t.current = 0;
       return;

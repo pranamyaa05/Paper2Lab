@@ -1,11 +1,12 @@
-import { ImageUp } from "lucide-react";
+import { FlaskConical, ImageUp } from "lucide-react";
 import { LinkButton } from "@/components/ui/Button";
 
 export function Header() {
   return (
     <header className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-3 pt-3 md:pt-4">
       <nav aria-label="Main" className="glass-panel pointer-events-auto flex items-center gap-1 rounded-full py-1.5 pl-5 pr-1.5 text-[15px] font-bold text-ink">
-        <a href="#top" className="mr-2 font-display text-lg font-extrabold">
+        <a href="#top" className="mr-2 flex items-center gap-1.5 font-display text-lg font-extrabold">
+          <FlaskConical className="size-5 text-sky-deep" aria-hidden />
           <span className="text-gradient-title">Paper2Lab</span>
         </a>
         <a href="#labs" className="hidden min-h-10 items-center rounded-full px-3.5 hover:bg-white/60 sm:flex">Labs</a>

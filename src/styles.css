@@ -291,32 +291,306 @@
   animation: shimmer 2.2s linear infinite;
 }
 
-/* Range inputs in the glass style. */
-input[type="range"].glass-range {
-  appearance: none;
-  height: 0.65rem;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--sky-deep) 0%, var(--sky-deep) var(--fill, 50%), oklch(1 0 0 / 0.7) var(--fill, 50%));
-  box-shadow: inset 0 1px 3px var(--glass-shade);
-  cursor: pointer;
-}
-input[type="range"].glass-range::-webkit-slider-thumb {
-  appearance: none;
-  width: 1.35rem;
-  height: 1.35rem;
-  border-radius: 999px;
-  background: radial-gradient(circle at 35% 30%, #fff 0%, #fff 30%, var(--sky) 100%);
-  border: 1px solid var(--glass-edge);
-  box-shadow: 0 4px 10px -2px var(--glass-drop), inset 0 -2px 4px var(--glass-shade);
-}
-input[type="range"].glass-range::-moz-range-thumb {
-  width: 1.35rem;
-  height: 1.35rem;
-  border-radius: 999px;
-  background: radial-gradient(circle at 35% 30%, #fff 0%, #fff 30%, var(--sky) 100%);
-  border: 1px solid var(--glass-edge);
-}
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+/* ───────────── Lab essentials: tubes, flasks, lamps and labels ───────────── */
+
+::selection { background: oklch(0.87 0.075 228 / 0.6); }
+button, a, input[type="range"], select { touch-action: manipulation; }
+.thin-scroll { scrollbar-width: thin; scrollbar-color: oklch(0.75 0.07 235 / 0.55) transparent; }
+
+@keyframes bubble-up {
+  0% { transform: translateY(0); opacity: 0; }
+  20% { opacity: 0.9; }
+  100% { transform: translateY(-26px); opacity: 0; }
+}
+@utility animate-bubble {
+  animation: bubble-up 2.6s ease-in infinite;
+}
+
+/* A range input drawn as a glass test tube: liquid fills up to a bubble handle, with measuring ticks below. */
+input[type="range"].tube-range {
+  --p: 0.5;
+  --thumb: 1.5rem;
+  --liquid-a: #8fd0f5;
+  --liquid-b: #6fa8f0;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 1.6rem;
+  background: transparent;
+  cursor: grab;
+}
+input[type="range"].tube-range:active { cursor: grabbing; }
+input[type="range"].tube-range::-webkit-slider-runnable-track {
+  height: 0.95rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, oklch(1 0 0 / 0.85), oklch(1 0 0 / 0) 55%) 0 0 / 100% 100% no-repeat,
+    linear-gradient(90deg, var(--liquid-a), var(--liquid-b)) 0 0 / calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--p)) 100% no-repeat,
+    oklch(1 0 0 / 0.55);
+  box-shadow: inset 0 1px 3px var(--glass-shade), 0 0 0 1px var(--glass-edge);
+}
+input[type="range"].tube-range::-moz-range-track {
+  height: 0.95rem;
+  border-radius: 999px;
+  background: oklch(1 0 0 / 0.55);
+  box-shadow: inset 0 1px 3px var(--glass-shade), 0 0 0 1px var(--glass-edge);
+}
+input[type="range"].tube-range::-moz-range-progress {
+  height: 0.95rem;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--liquid-a), var(--liquid-b));
+}
+input[type="range"].tube-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: calc((0.95rem - var(--thumb)) / 2);
+  border-radius: 999px;
+  border: 1px solid var(--glass-edge);
+  background: radial-gradient(circle at 32% 28%, #fff 0 16%, oklch(1 0 0 / 0.6) 17% 42%, var(--liquid-b) 100%);
+  box-shadow: 0 4px 10px -2px var(--glass-drop), inset 0 -3px 5px var(--glass-shade);
+  transition: transform 0.15s ease;
+}
+input[type="range"].tube-range::-moz-range-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  border-radius: 999px;
+  border: 1px solid var(--glass-edge);
+  background: radial-gradient(circle at 32% 28%, #fff 0 16%, oklch(1 0 0 / 0.6) 17% 42%, var(--liquid-b) 100%);
+  box-shadow: 0 4px 10px -2px var(--glass-drop), inset 0 -3px 5px var(--glass-shade);
+}
+input[type="range"].tube-range:active::-webkit-slider-thumb { transform: scale(1.14); }
+input[type="range"].tube-range:focus-visible { outline: none; }
+input[type="range"].tube-range:focus-visible::-webkit-slider-thumb { outline: 3px solid oklch(0.6 0.12 238 / 0.6); outline-offset: 2px; }
+input[type="range"].tube-range:focus-visible::-moz-range-thumb { outline: 3px solid oklch(0.6 0.12 238 / 0.6); outline-offset: 2px; }
+@media (pointer: coarse) {
+  input[type="range"].tube-range { --thumb: 2rem; height: 2.2rem; }
+}
+/* Measuring ticks under the tube: ten divisions, longer in the middle. */
+.tube-ticks {
+  display: block;
+  height: 0.4rem;
+  margin: 0.15rem calc(var(--tick-inset, 0.75rem)) 0;
+  background-image:
+    repeating-linear-gradient(90deg, oklch(0.5 0.05 250 / 0.4) 0 1px, transparent 1px 10%),
+    linear-gradient(oklch(0.5 0.05 250 / 0.4), oklch(0.5 0.05 250 / 0.4));
+  background-size: 100% 60%, 1px 60%;
+  background-position: 0 0, 100% 0;
+  background-repeat: no-repeat;
+}
+
+/* Digital instrument readout. */
+.lcd {
+  display: inline-block;
+  padding: 0.12rem 0.55rem;
+  border-radius: 0.5rem;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: #c4f6ff;
+  text-shadow: 0 0 6px #7fe3ff;
+  background: linear-gradient(180deg, #1f2b4d, #2f3e6e);
+  box-shadow: inset 0 1px 3px #0009, 0 1px 0 oklch(1 0 0 / 0.8);
+}
+
+/* Bubble-shaped handle used by the bench switch. */
+.bubble-thumb {
+  border: 1px solid var(--glass-edge);
+  background: radial-gradient(circle at 32% 28%, #fff 0 18%, oklch(1 0 0 / 0.85) 19% 40%, oklch(0.9 0.05 232) 100%);
+  box-shadow: 0 3px 8px -2px var(--glass-drop), inset 0 -3px 5px var(--glass-shade);
+}
+
+/* Measuring-cylinder progress bar. */
+.tube-progress {
+  position: relative;
+  height: 0.95rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: linear-gradient(180deg, oklch(1 0 0 / 0.9), oklch(1 0 0 / 0.35) 50%, oklch(1 0 0 / 0.6));
+  box-shadow: inset 0 1px 3px var(--glass-shade), 0 0 0 1px var(--glass-edge);
+}
+.tube-progress-fill {
+  position: absolute;
+  inset-block: 2px;
+  left: 2px;
+  max-width: calc(100% - 4px);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8fd0f5, #b79bf0 55%, #f3a6c4);
+  transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.tube-progress-fill::after {
+  content: "";
+  position: absolute;
+  inset: 1px 4px auto 4px;
+  height: 32%;
+  border-radius: 999px;
+  background: oklch(1 0 0 / 0.55);
+}
+.tube-progress-fill > i {
+  position: absolute;
+  bottom: 1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: oklch(1 0 0 / 0.85);
+  animation: bubble-up 2.4s ease-in infinite;
+}
+.tube-progress-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(90deg, transparent 0 calc(100% / var(--n, 3) - 1px), oklch(0.5 0.05 250 / 0.35) calc(100% / var(--n, 3) - 1px) calc(100% / var(--n, 3)));
+}
+
+/* Paper specimen label with a punched hole and a coloured edge. */
+.lab-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.7rem 0.2rem 1.4rem;
+  border-radius: 0.45rem;
+  border: 1px solid oklch(0.86 0.04 90);
+  background: oklch(0.99 0.025 95);
+  box-shadow: 0 2px 5px -2px var(--glass-drop), inset 0 -2.5px 0 var(--stripe, var(--sky-deep));
+  color: var(--ink);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+}
+.lab-label::before {
+  content: "";
+  position: absolute;
+  left: 0.45rem;
+  top: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-top: -0.25rem;
+  border-radius: 50%;
+  background: var(--background);
+  box-shadow: inset 0 1px 2px var(--glass-shade);
+}
+
+/* ───────────── Bubbles, the study buddy ───────────── */
+.buddy { overflow: visible; }
+.buddy-body { transform-origin: 60px 104px; animation: buddy-bob 3.2s ease-in-out infinite; }
+.buddy-think .buddy-body { animation: buddy-tilt 1.6s ease-in-out infinite alternate; }
+.buddy-cheer .buddy-body { animation: buddy-jump 0.55s ease-in-out 4; }
+.buddy-wave { animation: buddy-wave 2.8s linear infinite; }
+.buddy-blink { transform-box: fill-box; transform-origin: center; animation: buddy-blink 4.2s infinite; }
+.buddy-talk { transform-box: fill-box; transform-origin: center; animation: buddy-talk 0.3s ease-in-out infinite alternate; }
+.buddy-hand-l, .buddy-hand-r { transition: transform 0.3s ease; }
+.buddy-cheer .buddy-hand-l { transform: translate(-4px, -18px); }
+.buddy-cheer .buddy-hand-r { transform: translate(4px, -18px); }
+.buddy-dot { animation: buddy-dot 1.2s ease-in-out infinite; }
+.buddy-sparkle { animation: buddy-sparkle 0.9s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+
+@keyframes buddy-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+@keyframes buddy-tilt { from { transform: rotate(-5deg); } to { transform: rotate(3deg); } }
+@keyframes buddy-jump {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  30% { transform: translateY(-13px) rotate(-4deg); }
+  65% { transform: translateY(-6px) rotate(4deg); }
+}
+@keyframes buddy-wave { to { transform: translateX(-40px); } }
+@keyframes buddy-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(0.1); } }
+@keyframes buddy-talk { from { transform: scaleY(0.35); } to { transform: scaleY(1); } }
+@keyframes buddy-dot { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@keyframes buddy-sparkle { from { transform: scale(0.5); opacity: 0.6; } to { transform: scale(1.15); opacity: 1; } }
+
+/* ───────────── Buttons as lab equipment ───────────── */
+.liq-sky { --liquid-a: #c4e5fb; --liquid-b: #86bff0; }
+.liq-ochre { --liquid-a: #fcedb8; --liquid-b: #f2c872; }
+.liq-blush { --liquid-a: #fcd3df; --liquid-b: #f19dba; }
+
+/* Main actions: a test tube of pastel liquid with a cork in one end. Hover and bubbles rise. */
+.btn-tube {
+  position: relative;
+  isolation: isolate;
+  padding-left: 2.9rem;
+  border-radius: 999px;
+  border: 1.5px solid oklch(0.62 0.07 255 / 0.55);
+  color: var(--ink);
+  background:
+    linear-gradient(180deg, oklch(1 0 0 / 0.72) 0, oklch(1 0 0 / 0) 42%) 0 0 / 100% 100% no-repeat,
+    linear-gradient(90deg, var(--liquid-a), var(--liquid-b));
+  box-shadow: inset 0 -7px 12px -6px var(--glass-shade), inset 0 2px 2px oklch(1 0 0 / 0.85), 0 14px 26px -14px var(--glass-drop);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.25s ease, box-shadow 0.25s ease;
+}
+.btn-tube::before {
+  content: "";
+  position: absolute;
+  left: -0.6rem;
+  top: 50%;
+  width: 2.5rem;
+  height: 72%;
+  transform: translateY(-50%);
+  border-radius: 0.75rem 0.3rem 0.3rem 0.75rem;
+  border: 1.5px solid #b07a42;
+  background:
+    radial-gradient(circle at 28% 34%, #b07a4266 0 1.2px, transparent 1.7px),
+    radial-gradient(circle at 62% 66%, #b07a4266 0 1.2px, transparent 1.7px),
+    radial-gradient(circle at 46% 22%, #b07a4255 0 1px, transparent 1.5px),
+    linear-gradient(180deg, #f3cf98 0%, #e3b274 55%, #cf9a5c 100%);
+  box-shadow: inset 0 2px 2px #fff9, inset 0 -3px 3px #9a652a55;
+}
+.btn-tube::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  background:
+    radial-gradient(circle at 38% 72%, oklch(1 0 0 / 0.9) 0 2px, transparent 2.7px),
+    radial-gradient(circle at 56% 60%, oklch(1 0 0 / 0.8) 0 1.6px, transparent 2.2px),
+    radial-gradient(circle at 76% 74%, oklch(1 0 0 / 0.85) 0 2.4px, transparent 3px);
+  transition: opacity 0.3s ease, transform 0.7s ease;
+}
+.btn-tube:hover { transform: translateY(-2px); filter: saturate(1.12); }
+.btn-tube:hover::after { opacity: 1; transform: translateY(-4px); }
+.btn-tube:active { transform: translateY(1px) scale(0.985); box-shadow: inset 0 3px 8px var(--glass-shade), 0 4px 10px -8px var(--glass-drop); }
+
+/* Round icon buttons: a petri dish, with a rim, a tinted centre and a shine. */
+.btn-dish {
+  border-radius: 50%;
+  border: 2px solid oklch(1 0 0 / 0.95);
+  background:
+    radial-gradient(circle at 34% 28%, oklch(1 0 0 / 0.95) 0 9%, transparent 10%),
+    radial-gradient(circle at 50% 50%, transparent 0 56%, oklch(1 0 0 / 0.55) 57% 62%, transparent 63%),
+    var(--glass-tint, var(--gradient-sky));
+  box-shadow: inset 0 0 0 4px oklch(1 0 0 / 0.5), inset 0 -8px 12px -6px var(--glass-shade), 0 10px 20px -10px var(--glass-drop);
+}
+
+/* Sample chips: a microscope slide, with a coloured edge for the subject. */
+.btn-slide {
+  border-radius: 0.55rem;
+  border: 1px solid oklch(1 0 0 / 0.95);
+  background: linear-gradient(120deg, oklch(1 0 0 / 0.85), oklch(1 0 0 / 0.4) 45%, oklch(1 0 0 / 0.75));
+  box-shadow: inset 0 0 0 3px oklch(1 0 0 / 0.4), inset 0 -3px 0 var(--stripe, var(--sky-deep)), 0 8px 16px -10px var(--glass-drop);
+  backdrop-filter: blur(10px);
+  color: var(--ink);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.btn-slide:hover { transform: translateY(-2px) rotate(-0.6deg); }
+.btn-slide:active { transform: translateY(1px) scale(0.98); }
+
+/* The selected tab or filter: a tube filled with liquid. Unselected ones stay empty glass. */
+.tube-fill {
+  color: var(--ink);
+  border: 1.5px solid oklch(0.62 0.07 255 / 0.45);
+  background:
+    linear-gradient(180deg, oklch(1 0 0 / 0.7), oklch(1 0 0 / 0) 45%),
+    linear-gradient(90deg, var(--liquid-a, #c4e5fb), var(--liquid-b, #86bff0));
+  box-shadow: inset 0 -5px 8px -4px var(--glass-shade), inset 0 2px 2px oklch(1 0 0 / 0.8);
 }

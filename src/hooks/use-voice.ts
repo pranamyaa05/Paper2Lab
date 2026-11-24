@@ -98,7 +98,7 @@ export function useVoice() {
   }, []);
 
   const speak = useCallback(
-    async (english: string, onEnd?: () => void) => {
+    async (english: string, onEnd?: () => void, opts?: { translated?: boolean }) => {
       const token = ++tokenRef.current;
       if (timerRef.current) clearTimeout(timerRef.current);
       audioRef.current?.pause();
@@ -110,7 +110,7 @@ export function useVoice() {
       };
       setSpeaking(true);
       const lang = langRef.current;
-      const text = await translate(english, lang);
+      const text = opts?.translated ? english : await translate(english, lang);
       if (token !== tokenRef.current) return;
 
       if (natural) {
@@ -157,7 +157,10 @@ export function useVoice() {
     [natural],
   );
 
-  return { supported, speaking, speak, stop, language, setLanguage, canTranslate, natural };
+  /** The line in the chosen language (cached), so the speech bubble can show what is being spoken. */
+  const localize = useCallback((text: string) => translate(text, langRef.current), []);
+
+  return { supported, speaking, speak, stop, localize, language, setLanguage, canTranslate, natural };
 }
 
 export type Voice = ReturnType<typeof useVoice>;

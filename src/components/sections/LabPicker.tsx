@@ -6,10 +6,10 @@ import { TEMPLATE_LIST, type TemplateDef } from "@/labs/templates";
 import { SUBJECTS, type Subject } from "@/labs/types";
 import { cn } from "@/lib/utils";
 
-const META: Record<Subject, { label: string; icon: typeof Atom; tint: string; bg: string; button: "glassSky" | "glassOchre" | "glassBlush" }> = {
-  physics: { label: "Physics", icon: Atom, tint: "tint-sky", bg: "bg-sky/45", button: "glassSky" },
-  biology: { label: "Biology", icon: Leaf, tint: "tint-ochre", bg: "bg-ochre/45", button: "glassOchre" },
-  chemistry: { label: "Chemistry", icon: FlaskConical, tint: "tint-blush", bg: "bg-blush/45", button: "glassBlush" },
+const META: Record<Subject, { label: string; icon: typeof Atom; tint: string; bg: string; stripe: string; button: "tubeSky" | "tubeOchre" | "tubeBlush"; liq: string }> = {
+  physics: { label: "Physics", icon: Atom, tint: "tint-sky", bg: "bg-sky/45", stripe: "var(--sky-deep)", button: "tubeSky", liq: "liq-sky" },
+  biology: { label: "Biology", icon: Leaf, tint: "tint-ochre", bg: "bg-ochre/45", stripe: "var(--ochre-deep)", button: "tubeOchre", liq: "liq-ochre" },
+  chemistry: { label: "Chemistry", icon: FlaskConical, tint: "tint-blush", bg: "bg-blush/45", stripe: "var(--blush-deep)", button: "tubeBlush", liq: "liq-blush" },
 };
 
 /** The lab library, filterable by subject. Each card says what you'll do, for how long, at what level. */
@@ -36,7 +36,7 @@ export function LabPicker({ onPick }: { onPick: (id: TemplateDef["id"]) => void 
                   onClick={() => setSubject(s)}
                   className={cn(
                     "flex min-h-10 items-center gap-2 rounded-full px-4 font-display text-sm font-bold transition-all",
-                    subject === s ? cn("glass-convex", M?.tint ?? "tint-rainbow") : "text-ink/60 hover:text-ink",
+                    subject === s ? cn("tube-fill", M?.liq ?? "liq-sky") : "text-ink/60 hover:text-ink",
                   )}
                 >
                   {M && <M.icon className="size-4" />} {M ? M.label : "All"}
@@ -53,8 +53,8 @@ export function LabPicker({ onPick }: { onPick: (id: TemplateDef["id"]) => void 
               <article key={t.id} className="glass-panel group flex flex-col overflow-hidden rounded-[2rem] p-2.5 transition-transform hover:-translate-y-1">
                 <button onClick={() => onPick(t.id)} className={cn("relative overflow-hidden rounded-[1.5rem] p-3", M.bg)} aria-label={`Open the ${t.title} lab`}>
                   <SampleThumb id={t.id} className="block h-auto w-full rounded-2xl bg-white shadow-sm transition-transform duration-500 group-hover:scale-[1.03]" />
-                  <span className="absolute left-5 top-5 flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-xs font-extrabold text-ink">
-                    <M.icon className="size-3.5" /> {M.label}
+                  <span className="lab-label absolute left-5 top-5" style={{ ["--stripe" as string]: M.stripe }}>
+                    {M.label}
                   </span>
                 </button>
                 <div className="flex flex-1 flex-col px-3 pb-3 pt-4">

@@ -71,6 +71,8 @@ export function Studio({ request, onClose }: { request: StudioRequest | null; on
     setAnalysis({ ...analysis, spec: specFromTemplate(id, "manual"), note: `You said this shows ${TEMPLATES[id].title.toLowerCase()}, so I loaded that lab.` });
   };
 
+  const openSample = (id: TemplateDef["id"]) => void run({ dataUrl: sampleDataUrl(id), name: `${TEMPLATES[id].title}.png`, sampleId: id });
+
   const close = () => {
     abort.current?.abort();
     voice.stop();
@@ -96,7 +98,7 @@ export function Studio({ request, onClose }: { request: StudioRequest | null; on
           </div>
         )}
         {input && !analysis && <AnalyzingCard imageUrl={input.dataUrl} name={input.name} ai={ai && !input.sampleId} />}
-        {input && analysis && <LabView analysis={analysis} imageUrl={input.dataUrl} voice={voice} onPickTemplate={pickTemplate} onNew={close} />}
+        {input && analysis && <LabView analysis={analysis} imageUrl={input.dataUrl} voice={voice} onPickTemplate={pickTemplate} onOpenSample={openSample} onNew={close} />}
       </div>
     </section>
   );

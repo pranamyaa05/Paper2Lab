@@ -53,3 +53,7 @@ dist
 .DS_Store
 .cache
 *.tsbuildinfo
+
+# Keep the app source folder (the Python "lib/" rule above would hide it)
+!src/lib/
+!src/lib/**

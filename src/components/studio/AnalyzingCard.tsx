@@ -1,4 +1,5 @@
 import { Check, Loader2 } from "lucide-react";
+import { BubblingFlask } from "@/components/ui/lab";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,9 @@ export function AnalyzingCard({ imageUrl, name, ai }: { imageUrl: string; name: 
         </div>
       </div>
       <ol className="space-y-3">
+        <li className="flex justify-center md:justify-start">
+          <BubblingFlask />
+        </li>
         {STEPS.map((s, i) => (
           <li
             key={s}

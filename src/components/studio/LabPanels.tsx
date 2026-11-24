@@ -1,6 +1,7 @@
 import { Loader2, Pencil, Send, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { FlaskIcon, LabSwitch, TubeProgress, TubeSlider } from "@/components/ui/lab";
 import type { ActionSpec } from "@/labs/templates";
 import type { LabSpec, ParamSpec, ParamValues, Readout } from "@/labs/types";
 import { cn } from "@/lib/utils";
@@ -43,44 +44,18 @@ export function ControlsPanel({
 
       {spec.params.length > 0 && (
         <div className="space-y-4">
-          {spec.params.map((p) => {
+          {spec.params.map((p, i) => {
             const v = values[p.id] ?? p.value;
             if (p.kind === "toggle") {
               const on = v >= (p.min + p.max) / 2;
               return (
-                <label key={p.id} className="flex cursor-pointer items-center justify-between gap-3">
+                <div key={p.id} className="flex items-center justify-between gap-3">
                   <span className="text-sm font-bold text-ink">{p.label}</span>
-                  <button
-                    role="switch"
-                    aria-checked={on}
-                    onClick={() => onChange(p.id, on ? p.min : p.max)}
-                    className={cn("relative h-7 w-12 rounded-full transition-colors", on ? "glass-convex tint-sky" : "bg-white/70 shadow-inner")}
-                  >
-                    <span className={cn("absolute top-1 size-5 rounded-full bg-white shadow transition-all", on ? "left-6" : "left-1")} />
-                  </button>
-                </label>
+                  <LabSwitch on={on} label={p.label} onChange={(next) => onChange(p.id, next ? p.max : p.min)} />
+                </div>
               );
             }
-            const fill = ((v - p.min) / (p.max - p.min || 1)) * 100;
-            return (
-              <label key={p.id} className="block">
-                <span className="flex items-baseline justify-between gap-2">
-                  <span className="text-sm font-bold text-ink">{p.label}</span>
-                  <span className="font-mono text-xs font-bold text-sky-deep">{fmt(p, v)}</span>
-                </span>
-                <input
-                  type="range"
-                  className="glass-range mt-2 w-full"
-                  min={p.min}
-                  max={p.max}
-                  step={p.step}
-                  value={v}
-                  style={{ ["--fill" as string]: `${fill}%` }}
-                  onChange={(e) => onChange(p.id, Number(e.target.value))}
-                  aria-label={p.label}
-                />
-              </label>
-            );
+            return <TubeSlider key={p.id} label={p.label} display={fmt(p, v)} min={p.min} max={p.max} step={p.step} value={v} tone={i} onChange={(x) => onChange(p.id, x)} />;
           })}
         </div>
       )}
@@ -88,7 +63,7 @@ export function ControlsPanel({
       {actions.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {actions.map((a) => (
-            <Button key={a.id} variant="glassOchre" size="pill" onClick={() => onAction(a.id)}>
+            <Button key={a.id} variant="glassOchre" lamp onClick={() => onAction(a.id)}>
               {a.label}
             </Button>
           ))}
@@ -262,14 +237,35 @@ export interface MissionView {
   id: string;
   goal: string;
   hint: string;
+  /** Done right now, or earned in an earlier visit. */
   done: boolean;
 }
 
+export interface NextLab {
+  id: string;
+  title: string;
+}
+
 /** Goals that give students a reason to move the sliders. Done ones tick off live. */
-export function MissionsPanel({ missions, justDone }: { missions: MissionView[]; justDone: string | null }) {
+export function MissionsPanel({
+  missions,
+  justDone,
+  next,
+  onOpenLab,
+  onUpload,
+}: {
+  missions: MissionView[];
+  justDone: string | null;
+  /** Labs to suggest once every mission here is done. */
+  next: NextLab[];
+  onOpenLab: (id: string) => void;
+  onUpload: () => void;
+}) {
   const [hint, setHint] = useState<string | null>(null);
   const done = missions.filter((m) => m.done).length;
+  const startId = missions.find((m) => !m.done)?.id;
   if (!missions.length) return null;
+  const all = done === missions.length;
   return (
     <div className="rounded-2xl bg-white/65 p-4">
       <div className="flex items-center justify-between gap-3">
@@ -278,25 +274,23 @@ export function MissionsPanel({ missions, justDone }: { missions: MissionView[];
           {done} of {missions.length} done
         </span>
       </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white" aria-hidden>
-        <div className="h-full rounded-full bg-gradient-rainbow transition-all duration-500" style={{ width: `${(done / missions.length) * 100}%` }} />
+      <div className="mt-2">
+        <TubeProgress value={done} max={missions.length} label="Missions completed" />
       </div>
       <ul className="mt-3 space-y-2">
-        {missions.map((m) => (
-          <li key={m.id} className={cn("rounded-xl px-3 py-2 transition-colors", m.done ? "bg-sky/35" : "bg-white/70", justDone === m.id && "animate-card-pop")}>
+        {missions.map((m, i) => (
+          <li key={m.id} className={cn("rounded-xl px-3 py-2 transition-colors", m.done ? "bg-sky/35" : "bg-white/70", m.id === startId && !all && "ring-2 ring-blush-deep/50", justDone === m.id && "animate-card-pop")}>
             <div className="flex items-start gap-2.5">
-              <span
-                className={cn("mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border-2 text-[11px] font-black", m.done ? "border-sky-deep bg-sky-deep text-white" : "border-ink/25")}
-                aria-hidden
-              >
-                {m.done ? "✓" : ""}
-              </span>
-              <p className={cn("flex-1 text-sm font-bold text-ink", m.done && "text-ink/60")}>
-                <span className="sr-only">{m.done ? "Done: " : "To do: "}</span>
-                {m.goal}
-              </p>
+              <FlaskIcon fill={m.done ? 1 : 0} tone={i} className="mt-px" />
+              <div className="min-w-0 flex-1">
+                {m.id === startId && done === 0 && <span className="mb-0.5 inline-block rounded-full bg-blush-deep px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">Start here</span>}
+                <p className={cn("text-sm font-bold text-ink", m.done && "text-ink/60")}>
+                  <span className="sr-only">{m.done ? "Done: " : "To do: "}</span>
+                  {m.goal}
+                </p>
+              </div>
               {!m.done && (
-                <button onClick={() => setHint((h) => (h === m.id ? null : m.id))} className="shrink-0 rounded-full px-2 text-xs font-bold text-sky-deep hover:underline" aria-expanded={hint === m.id}>
+                <button onClick={() => setHint((h) => (h === m.id ? null : m.id))} className="min-h-8 shrink-0 rounded-full px-2.5 text-xs font-bold text-sky-deep hover:underline" aria-expanded={hint === m.id}>
                   Hint
                 </button>
               )}
@@ -305,7 +299,22 @@ export function MissionsPanel({ missions, justDone }: { missions: MissionView[];
           </li>
         ))}
       </ul>
-      {done === missions.length && <p className="mt-3 text-center font-display text-sm font-extrabold text-sky-deep">All missions complete. Brilliant work! 🎉</p>}
+      {all && (
+        <div className="animate-caption-in mt-4 rounded-2xl bg-gradient-to-br from-sky/40 via-white/60 to-blush/40 p-4 text-center">
+          <p className="font-display text-base font-extrabold text-ink">All missions complete. Brilliant work! 🎉</p>
+          <p className="mt-1 text-xs font-semibold text-ink/60">What would you like to explore next?</p>
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            {next.map((n) => (
+              <Button key={n.id} variant="glassSky" size="sm" className="min-h-10" onClick={() => onOpenLab(n.id)}>
+                {n.title}
+              </Button>
+            ))}
+            <Button variant="glassBlush" size="sm" className="min-h-10" onClick={onUpload}>
+              Use my own diagram
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

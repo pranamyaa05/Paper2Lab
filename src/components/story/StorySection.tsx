@@ -154,7 +154,7 @@ export function StorySection() {
               </p>
             )}
             {stage === 5 && (
-              <LinkButton href="#top" variant="glassBlush" size="pill" className="mt-4 pointer-events-auto">
+              <LinkButton href="#top" variant="tubeBlush" size="pill" className="mt-4 pointer-events-auto">
                 Try it with your own diagram
               </LinkButton>
             )}

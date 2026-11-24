@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 const HeroScene = lazy(() => import("./HeroScene"));
 
-const SUBJECT_TINT = { physics: "tint-sky", biology: "tint-ochre", chemistry: "tint-blush" } as const;
+const SUBJECT_STRIPE = { physics: "var(--sky-deep)", biology: "var(--ochre-deep)", chemistry: "var(--blush-deep)" } as const;
 
 const STEPS = [
   { icon: ScanLine, title: "Snap or upload", body: "Any diagram from any chapter." },
@@ -83,10 +83,10 @@ export function Hero({ onImage, onSample }: { onImage: (img: PickedImage) => voi
 
           {/* On phones the camera comes first: that's how students there will use it. */}
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Button variant="glassBlush" size="lg" className="order-2 min-h-14 w-full px-8 text-lg sm:order-1 sm:w-auto" onClick={() => fileInput.current?.click()}>
+            <Button variant="tubeBlush" size="lg" className="order-2 min-h-14 w-full px-8 text-lg sm:order-1 sm:w-auto" onClick={() => fileInput.current?.click()}>
               <ImageUp className="!size-5" /> Upload a diagram
             </Button>
-            <Button variant="glassSky" size="lg" className="order-1 min-h-14 w-full px-7 text-lg sm:order-2 sm:w-auto" onClick={() => cameraInput.current?.click()}>
+            <Button variant="tubeSky" size="lg" className="order-1 min-h-14 w-full px-7 text-lg sm:order-2 sm:w-auto" onClick={() => cameraInput.current?.click()}>
               <Camera className="!size-5" /> Take a photo
             </Button>
           </div>
@@ -104,9 +104,10 @@ export function Hero({ onImage, onSample }: { onImage: (img: PickedImage) => voi
                 <button
                   key={t.id}
                   onClick={() => onSample(t.id)}
-                  className={cn("glass-convex flex min-h-11 shrink-0 snap-start items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 text-sm font-bold", SUBJECT_TINT[t.subject])}
+                  className="btn-slide flex min-h-11 shrink-0 snap-start items-center gap-2 py-1.5 pl-1.5 pr-4 text-sm font-bold"
+                  style={{ ["--stripe" as string]: SUBJECT_STRIPE[t.subject] }}
                 >
-                  <SampleThumb id={t.id} className="h-8 w-11 rounded-full bg-white object-cover" />
+                  <SampleThumb id={t.id} className="h-8 w-11 rounded bg-white object-cover" />
                   {t.title}
                 </button>
               ))}
